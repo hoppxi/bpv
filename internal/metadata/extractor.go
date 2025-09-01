@@ -7,14 +7,13 @@ import (
 	"image"
 	"image/jpeg"
 	"io"
-	"maps"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/dhowden/tag"
-	"github.com/hoppxi/bpv/pkg/logger"
+	"github.com/hoppxi/bpv/internal/logger"
 )
 
 type AudioFile struct {
@@ -60,121 +59,154 @@ func NewExtractor() *Extractor {
 }
 
 func (e *Extractor) ExtractFromFile(filePath string) (*AudioFile, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %v", err)
-	}
-	defer file.Close()
+    if _, err := os.Stat(filePath); os.IsNotExist(err) {
+        return nil, fmt.Errorf("file does not exist: %s", filePath)
+    }
 
-	info, err := file.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get file info: %v", err)
-	}
+    file, err := os.Open(filePath)
+    if err != nil {
+        return nil, fmt.Errorf("failed to open file: %v", err)
+    }
+    defer file.Close()
 
-	metadata, err := tag.ReadFrom(file)
-	if err != nil && err != io.EOF {
-		return nil, fmt.Errorf("failed to read metadata: %v", err)
-	}
+    info, err := file.Stat()
+    if err != nil {
+        return nil, fmt.Errorf("failed to get file info: %v", err)
+    }
 
-	audioFile := &AudioFile{
-		FilePath:    filePath,
-		FileName:    filepath.Base(filePath),
-		FileSize:    info.Size(),
-		FileType:    strings.TrimPrefix(filepath.Ext(filePath), "."),
-		Modified:    info.ModTime(),
-		RawMetadata: make(map[string]any),
-	}
+    audioFile := &AudioFile{
+        FilePath:    filePath,
+        FileName:    filepath.Base(filePath),
+        FileSize:    info.Size(),
+        FileType:    strings.TrimPrefix(filepath.Ext(filePath), "."),
+        Modified:    info.ModTime(),
+        RawMetadata: make(map[string]any),
+        Title:       strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath)),
+        Artist:      "Unknown Artist",
+        Album:       "Unknown Album",
+        Genre:       "Unknown Genre",
+    }
 
-	e.populateBasicMetadata(audioFile, metadata)
+    if info.Size() == 0 {
+        return audioFile, nil
+    }
 
-	if e.extractCoverArt {
-		e.extractCoverArtData(audioFile, metadata)
-	}
+    metadata, err := tag.ReadFrom(file)
+    if err != nil && err != io.EOF {
+        return audioFile, nil
+    }
 
-	e.populateTechnicalMetadata(audioFile, file)
+    e.populateBasicMetadata(audioFile, metadata)
 
-	return audioFile, nil
+    if e.extractCoverArt && metadata != nil {
+        e.extractCoverArtData(audioFile, metadata)
+    }
+
+    e.populateTechnicalMetadata(audioFile, file)
+
+    return audioFile, nil
 }
 
 func (e *Extractor) populateBasicMetadata(audioFile *AudioFile, metadata tag.Metadata) {
-	// Title
-	if title := metadata.Title(); title != "" {
-		audioFile.Title = title
-	} else {
-		audioFile.Title = strings.TrimSuffix(audioFile.FileName, filepath.Ext(audioFile.FileName))
-	}
+    if metadata == nil {
+        audioFile.Title = strings.TrimSuffix(audioFile.FileName, filepath.Ext(audioFile.FileName))
+        audioFile.Artist = "Unknown Artist"
+        audioFile.Album = "Unknown Album"
+        audioFile.Genre = "Unknown Genre"
+        return
+    }
 
-	if artist := metadata.Artist(); artist != "" {
-		audioFile.Artist = artist
-	}
+    fileName := strings.TrimSuffix(audioFile.FileName, filepath.Ext(audioFile.FileName))
+    
+    if title := metadata.Title(); title != "" {
+        audioFile.Title = title
+    } else {
+        if parts := strings.SplitN(fileName, " - ", 2); len(parts) == 2 {
+            audioFile.Title = strings.TrimSpace(parts[1])
+        } else {
+            audioFile.Title = fileName
+        }
+    }
 
-	if album := metadata.Album(); album != "" {
-		audioFile.Album = album
-	}
-	
-	if albumArtist := metadata.AlbumArtist(); albumArtist != "" {
-		audioFile.AlbumArtist = albumArtist
-	}
+    if artist := metadata.Artist(); artist != "" {
+        audioFile.Artist = artist
+    } else {
+        if parts := strings.SplitN(fileName, " - ", 2); len(parts) == 2 {
+            audioFile.Artist = strings.TrimSpace(parts[0])
+        } else {
+            audioFile.Artist = "Unknown Artist"
+        }
+    }
 
-	if composer := metadata.Composer(); composer != "" {
-		audioFile.Composer = composer
-	}
+    if album := metadata.Album(); album != "" {
+        audioFile.Album = album
+    } else {
+        parentDir := filepath.Base(filepath.Dir(audioFile.FilePath))
+        if parentDir != "." && parentDir != ".." {
+            audioFile.Album = parentDir
+        } else {
+            audioFile.Album = "Unknown Album"
+        }
+    }
 
-	if genre := metadata.Genre(); genre != "" {
-		audioFile.Genre = genre
-	}
+    if albumArtist := metadata.AlbumArtist(); albumArtist != "" {
+        audioFile.AlbumArtist = albumArtist
+    } else {
+        audioFile.AlbumArtist = audioFile.Artist
+    }
 
-	if year := metadata.Year(); year > 0 {
-		audioFile.Year = year
-	}
+    if composer := metadata.Composer(); composer != "" {
+        audioFile.Composer = composer
+    }
 
-	track, totalTracks := metadata.Track()
-	audioFile.Track = track
-	audioFile.TotalTracks = totalTracks
+    if genre := metadata.Genre(); genre != "" {
+        audioFile.Genre = genre
+    } else {
+        audioFile.Genre = "Unknown Genre"
+    }
 
-	disc, totalDiscs := metadata.Disc()
-	audioFile.Disc = disc
-	audioFile.TotalDiscs = totalDiscs
+    if year := metadata.Year(); year > 0 {
+        audioFile.Year = year
+    }
 
-	if comment := metadata.Comment(); comment != "" {
-		audioFile.Comment = comment
-	}
+    track, totalTracks := metadata.Track()
+    audioFile.Track = track
+    audioFile.TotalTracks = totalTracks
 
-	// Lyrics (if available in raw format)
-	raw := metadata.Raw()
-	if raw != nil {
-		if lyrics, ok := raw["lyrics"]; ok {
-			if lyricStr, ok := lyrics.(string); ok {
-				audioFile.Lyrics = lyricStr
-			}
-		}
-		
-		// Store raw metadata for advanced use
-		maps.Copy(audioFile.RawMetadata, raw)
-	}
+    disc, totalDiscs := metadata.Disc()
+    audioFile.Disc = disc
+    audioFile.TotalDiscs = totalDiscs
+
+    if comment := metadata.Comment(); comment != "" {
+        audioFile.Comment = comment
+    }
 }
 
 func (e *Extractor) extractCoverArtData(audioFile *AudioFile, metadata tag.Metadata) {
-	picture := metadata.Picture()
-	if picture == nil {
-		return
-	}
+    if metadata == nil {
+        return
+    }
+    
+    picture := metadata.Picture()
+    if picture == nil {
+        return
+    }
 
-	img, _, err := image.Decode(bytes.NewReader(picture.Data))
-	if err != nil {
-		return
-	}
+    img, _, err := image.Decode(bytes.NewReader(picture.Data))
+    if err != nil {
+        return
+    }
 
-	img = e.resizeImage(img)
+    img = e.resizeImage(img)
 
-	var buf bytes.Buffer
-	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 85})
-	if err != nil {
-		return
-	}
+    var buf bytes.Buffer
+    err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 85})
+    if err != nil {
+        return
+    }
 
-	audioFile.CoverArt = base64.StdEncoding.EncodeToString(buf.Bytes())
-	audioFile.CoverArtMime = "image/jpeg"
+    audioFile.CoverArt = base64.StdEncoding.EncodeToString(buf.Bytes())
+    audioFile.CoverArtMime = "image/jpeg"
 }
 
 func (e *Extractor) resizeImage(img image.Image) image.Image {

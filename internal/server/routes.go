@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/hoppxi/bpv/internal/logger"
 	"github.com/hoppxi/bpv/internal/metadata"
 	"github.com/hoppxi/bpv/internal/scanner"
 )
@@ -210,73 +212,98 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleLibrary(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+    defer func() {
+        if err := recover(); err != nil {
+           logger.Log.Error("Panic in handleLibrary: %v", err)
+            http.Error(w, "Internal server error during library processing", http.StatusInternalServerError)
+        }
+    }()
 
-	if s.library == nil {
-		extractor := metadata.NewExtractor()
-		fileWalker := scanner.NewFileWalker(nil)
-		audioFilePaths, err := fileWalker.WalkDirectory(s.musicDir)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error walking directory: %v", err), http.StatusInternalServerError)
-			return
-		}
+    if r.Method != http.MethodGet {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
 
-		var files []metadata.AudioFile
-		artists := make(map[string]int)
-		albums := make(map[string]int)
-		genres := make(map[string]int)
-		var errors []string
+    if s.library == nil {
+        fileWalker := scanner.NewFileWalker(nil)
+        audioFilePaths, err := fileWalker.WalkDirectory(s.musicDir)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Error scanning directory: %v", err), http.StatusInternalServerError)
+            return
+        }
 
-		for _, filePath := range audioFilePaths {
-			audioFile, err := extractor.ExtractFromFile(filePath)
-			if err != nil {
-				errors = append(errors, fmt.Sprintf("Failed to extract metadata from %s: %v", 
-					filepath.Base(filePath), err))
-				continue
-			}
+        extractor := metadata.NewExtractor()
+        var files []metadata.AudioFile
+        artists := make(map[string]int)
+        albums := make(map[string]int)
+        genres := make(map[string]int)
+        var errors []string
 
-			files = append(files, *audioFile)
-			if audioFile.Artist != "" && audioFile.Artist != "Unknown Artist" {
-				artists[audioFile.Artist]++
-			}
-			if audioFile.Album != "" && audioFile.Album != "Unknown Album" {
-				albums[audioFile.Album]++
-			}
-			if audioFile.Genre != "" && audioFile.Genre != "Unknown Genre" {
-				genres[audioFile.Genre]++
-			}
-		}
+       logger.Log.Info("Scanning %d audio files...", len(audioFilePaths))
 
-		s.library = &scanner.ScanResult{
-			TotalFiles: len(audioFilePaths),
-			AudioFiles: len(files),
-			Artists:    artists,
-			Albums:     albums,
-			Genres:     genres,
-			Files:      files,
-			Duration:   time.Duration(0),
-			Errors:     errors,
-		}
-		s.lastScan = time.Now()
-	}
+        for i, filePath := range audioFilePaths {
+            audioFile, err := extractor.ExtractFromFile(filePath)
+            if err != nil {
+                errors = append(errors, fmt.Sprintf("Failed to extract metadata from %s: %v", 
+                    filepath.Base(filePath), err))
+                continue
+            }
 
-	response := LibraryResponse{
-		Status:     "ok",
-		TotalFiles: s.library.TotalFiles,
-		AudioFiles: s.library.AudioFiles,
-		Artists:    s.library.Artists,
-		Albums:     s.library.Albums,
-		Genres:     s.library.Genres,
-		Files:      s.library.Files,
-		ScanTime:   s.lastScan.Format(time.RFC3339),
-		Errors:     s.library.Errors,
-	}
+            if audioFile == nil {
+                errors = append(errors, fmt.Sprintf("Extracted nil metadata for %s", filePath))
+                continue
+            }
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+            files = append(files, *audioFile)
+            if audioFile.Artist != "" && audioFile.Artist != "Unknown Artist" {
+                artists[audioFile.Artist]++
+            }
+            if audioFile.Album != "" && audioFile.Album != "Unknown Album" {
+                albums[audioFile.Album]++
+            }
+            if audioFile.Genre != "" && audioFile.Genre != "Unknown Genre" {
+                genres[audioFile.Genre]++
+            }
+
+            if (i+1)%100 == 0 || i+1 == len(audioFilePaths) {
+               logger.Log.Info("Processed %d/%d files", i+1, len(audioFilePaths))
+            }
+        }
+
+       logger.Log.Success("Library scan completed: %d files, %d errors", len(files), len(errors))
+
+        s.library = &scanner.ScanResult{
+            TotalFiles: len(audioFilePaths),
+            AudioFiles: len(files),
+            Artists:    artists,
+            Albums:     albums,
+            Genres:     genres,
+            Files:      files,
+            Duration:   time.Duration(0),
+            Errors:     errors,
+        }
+        s.lastScan = time.Now()
+    }
+
+    if s.library == nil {
+        http.Error(w, "Library not initialized", http.StatusInternalServerError)
+        return
+    }
+
+    response := LibraryResponse{
+        Status:     "ok",
+        TotalFiles: s.library.TotalFiles,
+        AudioFiles: s.library.AudioFiles,
+        Artists:    s.library.Artists,
+        Albums:     s.library.Albums,
+        Genres:     s.library.Genres,
+        Files:      s.library.Files,
+        ScanTime:   s.lastScan.Format(time.RFC3339),
+        Errors:     s.library.Errors,
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }
 
 func (s *Server) handleMetadata(w http.ResponseWriter, r *http.Request) {
@@ -327,13 +354,13 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		result, err := s.scanner.ScanLibrary(s.musicDir)
 		if err != nil {
-			fmt.Printf("Scan failed: %v\n", err)
+			logger.Log.Error("Scan failed: %v\n", err)
 			return
 		}
 
 		s.library = result
 		s.lastScan = time.Now()
-		fmt.Printf("Scan completed: %d audio files found\n", result.AudioFiles)
+		logger.Log.Success("Scan completed: %d audio files found\n", result.AudioFiles)
 	}()
 
 	response := map[string]any{
@@ -490,6 +517,29 @@ func (s *Server) handleGenres(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) handleGenre(w http.ResponseWriter, r *http.Request) {
+	genreName := strings.TrimPrefix(r.URL.Path, "/api/genre/")
+	if genreName == "" {
+		http.Error(w, "Genre name required", http.StatusBadRequest)
+		return
+	}
+
+	var genreSongs []metadata.AudioFile
+	for _, file := range s.library.Files {
+		if file.Genre == genreName {
+			genreSongs = append(genreSongs, file)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"status": "ok",
+		"genre":  genreName,
+		"songs":  genreSongs,
+		"count":  len(genreSongs),
+	})
+}
+
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	if s.library == nil {
 		http.Error(w, "Library not scanned yet", http.StatusNotFound)
@@ -520,5 +570,54 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		"query":    query,
 		"results":  results,
 		"count":    len(results),
+	})
+}
+
+func (s *Server) handleDebug(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	files, err := os.ReadDir(s.musicDir)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Cannot read music directory: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	fileCounts := make(map[string]int)
+	for _, file := range files {
+		if file.IsDir() {
+			fileCounts["directories"]++
+		} else {
+			ext := strings.ToLower(filepath.Ext(file.Name()))
+			fileCounts[ext]++
+		}
+	}
+
+	response := map[string]any{
+		"status":       "ok",
+		"music_dir":    s.musicDir,
+		"file_counts":  fileCounts,
+		"total_files":  len(files),
+		"server_uptime": time.Since(s.startTime).String(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) handleScanSimple(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	s.library = nil
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"status":  "success",
+		"message": "Library scan initiated",
 	})
 }

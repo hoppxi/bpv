@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hoppxi/bpv/pkg/logger"
+	"github.com/hoppxi/bpv/internal/logger"
 )
 
 func Logger(next http.Handler) http.Handler {
@@ -51,7 +51,7 @@ func Recovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Log.Error("Panic recovered: %v\n", err)
+				logger.Log.Error("Panic recovered: %v", err)
 				http.Error(w, "Internal server error", http.StatusInternalServerError)
 			}
 		}()

@@ -3,10 +3,13 @@ package scanner
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/hoppxi/bpv/internal/logger"
 )
 
 type FileWalker struct {
@@ -34,12 +37,20 @@ func NewFileWalker(progressChan chan<- ScanProgress) *FileWalker {
 }
 
 func (fw *FileWalker) WalkDirectory(rootPath string) ([]string, error) {
+	logger.Log.Info("Starting directory walk: %s", rootPath)
+	
 	var audioFiles []string
 	var mu sync.Mutex
 	var totalFiles int
 
-	filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+	// First pass: count total files for progress reporting
+	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+			if os.IsPermission(err) {
+				logger.Log.Error("Permission denied: %s", path)
+				return nil
+			}
+			logger.Log.Error("Error accessing %s: %v", path, err)
 			return err
 		}
 		if !d.IsDir() {
@@ -48,18 +59,29 @@ func (fw *FileWalker) WalkDirectory(rootPath string) ([]string, error) {
 		return nil
 	})
 
+	if err != nil {
+		return nil, fmt.Errorf("error counting files: %v", err)
+	}
+
+	logger.Log.Info("Total files to scan: %d", totalFiles)
 	fw.sendProgress(0, totalFiles, "Scanning files...")
 	
 	startTime := time.Now()
 	processedFiles := 0
 
-	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+			if os.IsPermission(err) {
+				logger.Log.Error("Permission denied: %s", path)
+				return nil
+			}
+			logger.Log.Error("Error accessing %s: %v", path, err)
 			return err
 		}
 
 		if d.IsDir() {
-			if strings.HasPrefix(d.Name(), ".") && d.Name() != "." {
+			if d.Name() != "." && d.Name() != ".." && strings.HasPrefix(d.Name(), ".") {
+				logger.Log.Info("Skipping hidden directory: %s", path)
 				return filepath.SkipDir
 			}
 			return nil
@@ -70,11 +92,13 @@ func (fw *FileWalker) WalkDirectory(rootPath string) ([]string, error) {
 			mu.Lock()
 			audioFiles = append(audioFiles, path)
 			mu.Unlock()
+			logger.Log.Info("Found audio file: %s", path)
 		}
 
 		processedFiles++
 		if processedFiles%100 == 0 || processedFiles == totalFiles {
 			elapsed := time.Since(startTime)
+			logger.Log.Info("Scan progress: %d/%d files", processedFiles, totalFiles)
 			fw.sendProgress(processedFiles, totalFiles, 
 				fmt.Sprintf("Scanned %d/%d files (%v elapsed)", processedFiles, totalFiles, elapsed.Round(time.Second)))
 		}
@@ -82,8 +106,13 @@ func (fw *FileWalker) WalkDirectory(rootPath string) ([]string, error) {
 		return nil
 	})
 
+	if err != nil {
+		return nil, fmt.Errorf("error walking directory: %v", err)
+	}
+
+	logger.Log.Success("Directory walk completed: found %d audio files", len(audioFiles))
 	fw.sendProgress(totalFiles, totalFiles, "Scan completed")
-	return audioFiles, err
+	return audioFiles, nil
 }
 
 func (fw *FileWalker) sendProgress(current, total int, message string) {

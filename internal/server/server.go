@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hoppxi/bpv/internal/logger"
 	"github.com/hoppxi/bpv/internal/metadata"
 	"github.com/hoppxi/bpv/internal/scanner"
-	"github.com/hoppxi/bpv/pkg/logger"
 )
 
 type Server struct {
@@ -21,6 +21,7 @@ type Server struct {
 	scanner  *scanner.Scanner
 	library  *scanner.ScanResult
 	lastScan time.Time
+	startTime time.Time
 }
 
 // NewServer creates a new BPV server instance
@@ -29,6 +30,7 @@ func NewServer(port int, musicDir string) *Server {
 		port:     port,
 		musicDir: musicDir,
 		scanner:  scanner.NewScanner(),
+		startTime: time.Now(),
 	}
 	return s
 }
@@ -77,14 +79,17 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/library", s.handleLibrary)
 	mux.HandleFunc("/api/metadata/", s.handleMetadata)
 	mux.HandleFunc("/api/scan", s.handleScan)
+	mux.HandleFunc("/api/scan-simple", s.handleScanSimple)
 	mux.HandleFunc("/api/scan/progress", s.handleScanProgress)
 	mux.HandleFunc("/api/artists", s.handleArtists)
 	mux.HandleFunc("/api/artist/", s.handleArtist)
 	mux.HandleFunc("/api/albums", s.handleAlbums)
 	mux.HandleFunc("/api/album/", s.handleAlbum)
 	mux.HandleFunc("/api/genres", s.handleGenres)
+	mux.HandleFunc("/api/genre/", s.handleGenre)
 	mux.HandleFunc("/api/search", s.handleSearch)
-	
+	mux.HandleFunc("/api/debug", s.handleDebug)
+
 	mux.HandleFunc("/api/cover/", s.handleCoverArt)
 }
 
