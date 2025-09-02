@@ -23,6 +23,7 @@ type HealthResponse struct {
 
 type LibraryResponse struct {
 	Status      string               `json:"status"`
+	MusicDir    string 				 `json:"music_dir"`
 	TotalFiles  int                  `json:"total_files"`
 	AudioFiles  int                  `json:"audio_files"`
 	Artists     map[string]int       `json:"artists"`
@@ -292,6 +293,7 @@ func (s *Server) handleLibrary(w http.ResponseWriter, r *http.Request) {
 
     response := LibraryResponse{
         Status:     "ok",
+		MusicDir:   s.musicDir,
         TotalFiles: s.library.TotalFiles,
         AudioFiles: s.library.AudioFiles,
         Artists:    s.library.Artists,
