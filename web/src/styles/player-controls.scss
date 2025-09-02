@@ -1,0 +1,131 @@
+@use "./variables" as v;
+@use "sass:color";
+
+.player-controls {
+  display: flex;
+  flex-direction: column;
+  gap: v.$spacing-lg;
+}
+
+.player-controls__main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: v.$spacing-md;
+}
+
+.player-controls__secondary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  position: absolute;
+  bottom: 7%;
+  right: 4.5%;
+  z-index: 3;
+}
+
+.player-controls__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: v.$border-radius-round;
+  background: rgba(255, 255, 255, 0.1);
+  color: v.$text-color;
+  cursor: pointer;
+  transition: all v.$transition-normal;
+  backdrop-filter: blur(10px);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &--play-pause {
+    width: 60px;
+    height: 60px;
+    background: v.$accent-color;
+
+    &:hover {
+      background: color.adjust(v.$accent-color, $lightness: 10%);
+      box-shadow: 0 8px 25px rgba(v.$accent-color, 0.4);
+    }
+  }
+
+  &--active {
+    background: v.$accent-color;
+    color: white;
+
+    &:hover {
+      background: color.adjust(v.$accent-color, $lightness: 10%);
+    }
+  }
+}
+
+.player-controls__visualizer-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: v.$spacing-sm;
+}
+
+.player-controls__visualizer-select {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: v.$border-radius-md;
+  color: v.$text-color;
+  padding: v.$spacing-sm v.$spacing-md;
+  padding-right: 2.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all v.$transition-normal;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  option {
+    background: v.$primary-color;
+    color: v.$text-color;
+  }
+}
+
+.player-controls__visualizer-icon {
+  position: absolute;
+  right: v.$spacing-sm;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+// Responsive design
+@media (max-width: 480px) {
+  .player-controls__main {
+    gap: v.$spacing-sm;
+  }
+
+  .player-controls__btn {
+    width: 40px;
+    height: 40px;
+
+    &--play-pause {
+      width: 50px;
+      height: 50px;
+    }
+  }
+
+  .player-controls__visualizer-select {
+    font-size: 0.8rem;
+    padding: v.$spacing-xs v.$spacing-sm;
+    padding-right: 2rem;
+  }
+}

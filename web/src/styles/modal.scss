@@ -1,0 +1,145 @@
+@use "./variables" as v;
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: v.$z-modal;
+  padding: v.$spacing-md;
+}
+
+.modal {
+  background: v.$background-blur;
+  backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: v.$border-radius-xl;
+  width: 100%;
+  max-width: 1200px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: v.$shadow-lg;
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: v.$spacing-lg;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: v.$text-color;
+  margin: 0;
+}
+
+.modal__close-btn {
+  background: none;
+  border: none;
+  color: v.$text-secondary;
+  cursor: pointer;
+  padding: v.$spacing-xs;
+  border-radius: v.$border-radius-round;
+  transition: all v.$transition-normal;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: v.$text-color;
+  }
+}
+
+.modal__tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 v.$spacing-lg;
+  overflow-x: auto;
+  min-height: 50px;
+}
+
+.modal__tab {
+  display: flex;
+  align-items: center;
+  gap: v.$spacing-xs;
+  padding: v.$spacing-md v.$spacing-lg;
+  background: none;
+  border: none;
+  color: v.$text-secondary;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all v.$transition-normal;
+  border-bottom: 2px solid transparent;
+
+  &:hover {
+    color: v.$text-color;
+  }
+
+  &--active {
+    color: v.$accent-color;
+    border-bottom-color: v.$accent-color;
+  }
+}
+
+.modal__content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: v.$spacing-sm;
+  }
+
+  .modal {
+    max-height: 95vh;
+  }
+
+  .modal__header {
+    padding: v.$spacing-md;
+  }
+
+  .modal__tabs {
+    padding: 0 v.$spacing-md;
+  }
+
+  .modal__tab {
+    padding: v.$spacing-sm v.$spacing-md;
+    font-size: 0.9rem;
+
+    span {
+      display: none;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal {
+    border-radius: 0;
+    max-height: 100vh;
+    height: 100vh;
+  }
+
+  .modal__header {
+    padding: v.$spacing-md;
+  }
+
+  .modal__tabs {
+    justify-content: center;
+  }
+}
