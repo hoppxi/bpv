@@ -93,6 +93,9 @@ func (e *Extractor) ExtractFromFile(filePath string) (*AudioFile, error) {
 
     metadata, err := tag.ReadFrom(file)
     if err != nil && err != io.EOF {
+        if logger.Log.IsVerbose() {
+            logger.Log.Warn("Failed to extract metadata from %s: %v", filePath, err)
+        }
         return audioFile, nil
     }
 

@@ -37,7 +37,7 @@ func NewFileWalker(progressChan chan<- ScanProgress) *FileWalker {
 }
 
 func (fw *FileWalker) WalkDirectory(rootPath string) ([]string, error) {
-	logger.Log.Info("Starting directory walk: %s", rootPath)
+	logger.Log.Debug("Starting directory walk: %s", rootPath)
 	
 	var audioFiles []string
 	var mu sync.Mutex
@@ -63,7 +63,7 @@ func (fw *FileWalker) WalkDirectory(rootPath string) ([]string, error) {
 		return nil, fmt.Errorf("error counting files: %v", err)
 	}
 
-	logger.Log.Info("Total files to scan: %d", totalFiles)
+	logger.Log.Debug("Total files to scan: %d", totalFiles)
 	fw.sendProgress(0, totalFiles, "Scanning files...")
 	
 	startTime := time.Now()
@@ -81,7 +81,7 @@ func (fw *FileWalker) WalkDirectory(rootPath string) ([]string, error) {
 
 		if d.IsDir() {
 			if d.Name() != "." && d.Name() != ".." && strings.HasPrefix(d.Name(), ".") {
-				logger.Log.Info("Skipping hidden directory: %s", path)
+				logger.Log.Debug("Skipping hidden directory: %s", path)
 				return filepath.SkipDir
 			}
 			return nil
@@ -92,13 +92,13 @@ func (fw *FileWalker) WalkDirectory(rootPath string) ([]string, error) {
 			mu.Lock()
 			audioFiles = append(audioFiles, path)
 			mu.Unlock()
-			logger.Log.Info("Found audio file: %s", path)
+			logger.Log.Debug("Found audio file: %s", path)
 		}
 
 		processedFiles++
 		if processedFiles%100 == 0 || processedFiles == totalFiles {
 			elapsed := time.Since(startTime)
-			logger.Log.Info("Scan progress: %d/%d files", processedFiles, totalFiles)
+			logger.Log.Debug("Scan progress: %d/%d files", processedFiles, totalFiles)
 			fw.sendProgress(processedFiles, totalFiles, 
 				fmt.Sprintf("Scanned %d/%d files (%v elapsed)", processedFiles, totalFiles, elapsed.Round(time.Second)))
 		}
@@ -110,7 +110,7 @@ func (fw *FileWalker) WalkDirectory(rootPath string) ([]string, error) {
 		return nil, fmt.Errorf("error walking directory: %v", err)
 	}
 
-	logger.Log.Success("Directory walk completed: found %d audio files", len(audioFiles))
+	logger.Log.Debug("Directory walk completed: found %d audio files", len(audioFiles))
 	fw.sendProgress(totalFiles, totalFiles, "Scan completed")
 	return audioFiles, nil
 }

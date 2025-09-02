@@ -40,7 +40,7 @@ func Init(verbose bool) {
 
 // Log prints a message with the given level
 func (l *Logger) Log(level LogLevel, format string, args ...any) {
-	if (level == DEBUG || level == INFO) && (!l.verbose) {
+	if level == DEBUG && !l.verbose {
 		return
 	}
 
@@ -91,16 +91,14 @@ func (l *Logger) Warn(format string, args ...any) {
 
 // Error prints an error message and returns formatted error
 func (l *Logger) Error(format string, args ...any) error {
-	errMsg := fmt.Sprintf(format, args...)
-	l.Log(ERROR, errMsg)
-	return fmt.Errorf(errMsg)
+	l.Log(ERROR, format, args...)
+	return fmt.Errorf(format, args...)
 }
 
 // ErrorP prints an error message with prefix and returns formatted error
 func (l *Logger) ErrorP(prefix, format string, args ...any) error {
-	errMsg := fmt.Sprintf("%s: %s", prefix, fmt.Sprintf(format, args...))
-	l.Log(ERROR, errMsg)
-	return fmt.Errorf(errMsg)
+	l.Log(ERROR, "%s: %s", prefix, fmt.Sprintf(format, args...))
+	return fmt.Errorf("%s: %s", prefix, fmt.Sprintf(format, args...))
 }
 
 // Fatal prints a fatal error message and exits the program
@@ -111,8 +109,7 @@ func (l *Logger) Fatal(format string, args ...any) {
 
 // FatalP prints a fatal error message with prefix and exits the program
 func (l *Logger) FatalP(prefix, format string, args ...any) {
-	errMsg := fmt.Sprintf("%s: %s", prefix, fmt.Sprintf(format, args...))
-	l.Log(FATAL, errMsg)
+	l.Log(FATAL, "%s: %s", prefix, fmt.Sprintf(format, args...))
 	os.Exit(1)
 }
 

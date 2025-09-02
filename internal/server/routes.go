@@ -239,7 +239,7 @@ func (s *Server) handleLibrary(w http.ResponseWriter, r *http.Request) {
         genres := make(map[string]int)
         var errors []string
 
-       logger.Log.Info("Scanning %d audio files...", len(audioFilePaths))
+       logger.Log.Debug("Scanning %d audio files...", len(audioFilePaths))
 
         for i, filePath := range audioFilePaths {
             audioFile, err := extractor.ExtractFromFile(filePath)
@@ -266,11 +266,11 @@ func (s *Server) handleLibrary(w http.ResponseWriter, r *http.Request) {
             }
 
             if (i+1)%100 == 0 || i+1 == len(audioFilePaths) {
-               logger.Log.Info("Processed %d/%d files", i+1, len(audioFilePaths))
+               logger.Log.Debug("Processed %d/%d files", i+1, len(audioFilePaths))
             }
         }
 
-       logger.Log.Success("Library scan completed: %d files, %d errors", len(files), len(errors))
+       logger.Log.Debug("Library scan completed: %d files, %d errors", len(files), len(errors))
 
         s.library = &scanner.ScanResult{
             TotalFiles: len(audioFilePaths),

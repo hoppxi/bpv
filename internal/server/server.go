@@ -48,7 +48,7 @@ func (s *Server) Start() error {
 		IdleTimeout:  60 * time.Second,
 	}
 	
-	logger.Log.Info("Server starting on http://localhost:%d", s.port)
+	logger.Log.Debug("Server started on http://localhost:%d", s.port)
 	return s.server.ListenAndServe()
 }
 
