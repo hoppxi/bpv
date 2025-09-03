@@ -623,3 +623,18 @@ func (s *Server) handleScanSimple(w http.ResponseWriter, r *http.Request) {
 		"message": "Library scan initiated",
 	})
 }
+
+func (s *Server) handleBaseFilePath(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	response := map[string]any{
+		"status":    "ok",
+		"base_path": s.musicDir,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
