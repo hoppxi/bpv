@@ -1,5 +1,5 @@
 import React from "react";
-import { Play, RefreshCw, ListMusic } from "lucide-react";
+import { Play, RefreshCw, ListMusic, Music2, BarChart2 } from "lucide-react";
 import { LibraryTabProps } from "@/types";
 import { formatTime, formatFileSize } from "@/utils/formatters";
 import "@/styles/modal-tabs.scss";
@@ -69,11 +69,25 @@ const LibraryTab: React.FC<LibraryTabProps> = ({
                 }`}
                 onClick={() => onPlayTrack(track)}
               >
-                <div className="song-item__number">
+                <div className="song-item__index">
                   {currentTrack?.file_path === track.file_path ? (
-                    <div className="song-item__playing-indicator">▶</div>
+                    <div className="song-item__playing-indicator">
+                      <BarChart2 />
+                    </div>
                   ) : (
-                    index + 1
+                    <div className="song-item__number">{index + 1}</div>
+                  )}
+
+                  {track?.cover_art ? (
+                    <img
+                      src={`data:${track?.cover_art_mime};base64,${track?.cover_art}`}
+                      alt={track?.album}
+                      className="song-item__cover"
+                    />
+                  ) : (
+                    <div className="song-item__cover-placeholder">
+                      <Music2 />
+                    </div>
                   )}
                 </div>
                 <div className="song-item__info">

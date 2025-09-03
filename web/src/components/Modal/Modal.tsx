@@ -87,6 +87,7 @@ const Modal: React.FC<ModalProps> = ({
         return (
           <SearchTab
             library={library}
+            currentTrack={currentTrack}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onPlayTrack={onPlayTrack}

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ArtistsTabProps } from "@/types";
-import { Play, Users, Search } from "lucide-react";
-import { formatTime } from "@/utils";
+import { Play, Users, Search, BarChart2, Music2 } from "lucide-react";
+import { formatTime, formatFileSize } from "@/utils";
 import "@/styles/modal-tabs.scss";
 
 const ArtistsTab: React.FC<ArtistsTabProps> = ({
@@ -54,7 +54,7 @@ const ArtistsTab: React.FC<ArtistsTabProps> = ({
 
         <div className="tab-content__list">
           <div className="songs-list">
-            {artistSongs.map((track) => (
+            {artistSongs.map((track, index) => (
               <div
                 key={track.file_path}
                 className={`song-item ${
@@ -64,12 +64,37 @@ const ArtistsTab: React.FC<ArtistsTabProps> = ({
                 }`}
                 onClick={() => onPlayTrack(track)}
               >
+                <div className="song-item__index">
+                  {currentTrack?.file_path === track.file_path ? (
+                    <div className="song-item__playing-indicator">
+                      <BarChart2 />
+                    </div>
+                  ) : (
+                    <div className="song-item__number">{index + 1}</div>
+                  )}
+
+                  {track?.cover_art ? (
+                    <img
+                      src={`data:${track?.cover_art_mime};base64,${track?.cover_art}`}
+                      alt={track?.album}
+                      className="song-item__cover"
+                    />
+                  ) : (
+                    <div className="song-item__cover-placeholder">
+                      <Music2 />
+                    </div>
+                  )}
+                </div>
                 <div className="song-item__info">
                   <div className="song-item__title">{track.title}</div>
-                  <div className="song-item__album">{track.album}</div>
+                  <div className="song-item__artist">{track.artist}</div>
                 </div>
+                <div className="song-item__album">{track.album}</div>
                 <div className="song-item__duration">
                   {formatTime(parseInt(track.duration) || 0)}
+                </div>
+                <div className="song-item__size">
+                  {formatFileSize(track.file_size)}
                 </div>
               </div>
             ))}
