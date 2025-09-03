@@ -11,6 +11,7 @@ import {
   Heart,
 } from "lucide-react";
 import "@/styles/modal-tabs.scss";
+import { IDB } from "@/utils/indexedDB";
 
 const SettingsTab: React.FC<SettingsTabProps> = ({
   visualizerType,
@@ -43,10 +44,10 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
         "Clear all cached data? This will remove your library cache and settings."
       )
     ) {
-      localStorage.removeItem("musicLibrary");
-      localStorage.removeItem("libraryLastUpdated");
-      localStorage.removeItem("currentTrack");
-      localStorage.removeItem("playbackState");
+      IDB.removeItem("musicLibrary");
+      IDB.removeItem("libraryLastUpdated");
+      IDB.removeItem("currentTrack");
+      IDB.removeItem("playbackState");
       window.location.reload();
     }
   };

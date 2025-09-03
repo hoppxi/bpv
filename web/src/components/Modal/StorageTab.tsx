@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Trash2, Download, Upload, PieChart } from "lucide-react";
-import { formatFileSize } from "@/utils";
+import { formatFileSize, IDB } from "@/utils";
 import "@/styles/modal-tabs.scss";
 
 const StorageTab: React.FC = () => {
@@ -17,20 +17,18 @@ const StorageTab: React.FC = () => {
   });
 
   useEffect(() => {
-    calculateStorageUsage();
+    (async () => await calculateStorageUsage())();
   }, []);
 
-  const calculateStorageUsage = () => {
-    let totalSize = 0;
+  const calculateStorageUsage = async () => {
     const items: Array<{ key: string; size: number; lastModified: string }> =
       [];
 
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < (await IDB.length()); i++) {
+      const key = await IDB.key(i);
       if (key) {
-        const value = localStorage.getItem(key) || "";
-        const size = new Blob([value]).size;
-        totalSize += size;
+        const value = (await IDB.getItem(key)) || "";
+        const size = new Blob([value as BlobPart]).size;
 
         items.push({
           key,
@@ -40,24 +38,23 @@ const StorageTab: React.FC = () => {
       }
     }
 
-    // Estimate total storage (usually 5MB for most browsers)
-    const totalStorage = 5 * 1024 * 1024; // 5MB in bytes
-    const freeStorage = totalStorage - totalSize;
+    const storage = await IDB.getStorageInfo();
+    const freeStorage = storage.quota - storage.used;
 
     setStorageData({
-      total: totalStorage,
-      used: totalSize,
+      total: storage.quota,
+      used: storage.used,
       free: freeStorage,
       items: items.sort((a, b) => b.size - a.size),
     });
   };
 
-  const handleExportData = () => {
+  const handleExportData = async () => {
     const data: Record<string, string> = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < (await IDB.length()); i++) {
+      const key = await IDB.key(i);
       if (key) {
-        data[key] = localStorage.getItem(key) || "";
+        data[key] = (await IDB.getItem(key)) || "";
       }
     }
 
@@ -83,9 +80,9 @@ const StorageTab: React.FC = () => {
         if (
           window.confirm("This will overwrite your current data. Continue?")
         ) {
-          localStorage.clear();
+          IDB.clear();
           Object.entries(data).forEach(([key, value]) => {
-            localStorage.setItem(key, value as string);
+            IDB.setItem(key, value as string);
           });
           calculateStorageUsage();
           alert("Data imported successfully!");
@@ -99,14 +96,14 @@ const StorageTab: React.FC = () => {
 
   const handleClearItem = (key: string) => {
     if (window.confirm(`Delete "${key}"?`)) {
-      localStorage.removeItem(key);
+      IDB.removeItem(key);
       calculateStorageUsage();
     }
   };
 
   const handleClearAll = () => {
     if (window.confirm("Clear all stored data? This cannot be undone.")) {
-      localStorage.clear();
+      IDB.clear();
       calculateStorageUsage();
     }
   };
@@ -118,7 +115,7 @@ const StorageTab: React.FC = () => {
       <div className="tab-content__header">
         <div className="tab-content__stats">
           <h3>Storage</h3>
-          <p>Manage your local storage data</p>
+          <p>Manage your local storage data (uses indexedDB)</p>
         </div>
         <div className="tab-content__actions">
           <button

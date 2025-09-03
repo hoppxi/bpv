@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { baseFilePath } from "@/utils/api";
 import { UseAudioPlayerProps, AudioFile } from "@/types";
 
 export function useAudioPlayer({
   volume,
   onTrackEnd,
   onTrackChange,
+  onTimeUpdate,
 }: UseAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -156,7 +158,7 @@ export function useAudioPlayer({
   }, [isPlaying]);
 
   const playTrack = useCallback(
-    (track: AudioFile) => {
+    async (track: AudioFile, initialPosition: number = 0) => {
       if (!audioRef.current) return;
 
       try {
@@ -165,22 +167,18 @@ export function useAudioPlayer({
 
         // Stop current playback
         audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+        audioRef.current.currentTime = initialPosition;
 
-        // Set new track source
-        const audioPath = `/files/${encodeURIComponent(track.file_name)}`;
+        const audioPath = `/files/${encodeURIComponent(
+          track.file_path.replace(await baseFilePath(), "")
+        )}`;
         audioRef.current.src = audioPath;
 
-        // Load the audio
         audioRef.current.load();
-
-        // Set current track
         setCurrentTrack(track);
         onTrackChange(track);
 
-        // Play the audio
         const playPromise = audioRef.current.play();
-
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
@@ -200,8 +198,22 @@ export function useAudioPlayer({
         setIsLoading(false);
       }
     },
-    [onTrackChange]
+    [onTrackChange, onTimeUpdate]
   );
+
+  useEffect(() => {
+    if (!audioRef.current) return;
+
+    const handleTimeUpdate = () => {
+      if (onTimeUpdate) {
+        onTimeUpdate(audioRef.current?.currentTime);
+      }
+    };
+
+    audioRef.current?.addEventListener("timeupdate", handleTimeUpdate);
+    return () =>
+      audioRef.current?.removeEventListener("timeupdate", handleTimeUpdate);
+  }, [onTimeUpdate]);
 
   const togglePlayPause = useCallback(() => {
     if (!audioRef.current) return;

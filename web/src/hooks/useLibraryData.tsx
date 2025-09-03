@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { LibraryResponse } from "@/types";
+import { IDB } from "@/utils/indexedDB";
 
 export function useLibraryData() {
   const [library, setLibrary] = useState<LibraryResponse | null>(null);
@@ -21,8 +22,8 @@ export function useLibraryData() {
 
       if (data.status === "ok") {
         setLibrary(data);
-        localStorage.setItem("musicLibrary", JSON.stringify(data));
-        localStorage.setItem("libraryLastUpdated", new Date().toISOString());
+        IDB.setItem("musicLibrary", JSON.stringify(data));
+        IDB.setItem("libraryLastUpdated", new Date().toISOString());
       } else {
         throw new Error("Invalid response from server");
       }

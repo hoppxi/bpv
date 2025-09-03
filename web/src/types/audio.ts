@@ -53,4 +53,5 @@ export interface UseAudioPlayerProps {
   volume: number;
   onTrackEnd: () => void;
   onTrackChange: (track: AudioFile | null) => void;
+  onTimeUpdate: (currentTime: number | undefined) => void;
 }

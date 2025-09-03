@@ -35,3 +35,12 @@ export async function checkHealth(): Promise<boolean> {
     return false;
   }
 }
+
+export async function baseFilePath(): Promise<string> {
+  const response = await fetch("/api/base-path");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch base path: ${response.status}`);
+  }
+  const data = await response.json();
+  return data.base_path;
+}

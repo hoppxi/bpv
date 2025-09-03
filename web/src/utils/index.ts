@@ -31,3 +31,4 @@ export {
   setStoredSettings,
   STORAGE_KEYS,
 } from "./storage";
+export { IDB } from "./indexedDB";

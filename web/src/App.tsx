@@ -1,54 +1,92 @@
 import { useState, useEffect } from "react";
 import { AudioFile, VisualizerType } from "@/types";
-import { useAudioPlayer, useLibraryData, useLocalStorage } from "@/hooks";
+import {
+  useAudioPlayer,
+  useLibraryData,
+  // useIDB,
+  useIndexedDB,
+} from "@/hooks";
 import { Player, Modal, Background } from "@/components";
+import { IDB } from "./utils";
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTrack, setCurrentTrack] = useState<AudioFile | null>(null);
 
-  // Get library data
   const { library, loading, error, refreshLibrary } = useLibraryData();
 
-  // Get user preferences from localStorage
-  const [visualizerType, setVisualizerType] = useLocalStorage<VisualizerType>(
+  const [visualizerType, setVisualizerType] = useIndexedDB<VisualizerType>(
     "visualizerType",
     "bars"
   );
-  const [shuffle, setShuffle] = useLocalStorage("shuffle", false);
-  const [repeat, setRepeat] = useLocalStorage("repeat", false);
-  const [volume, setVolume] = useLocalStorage("volume", 0.7);
+  const [shuffle, setShuffle] = useIndexedDB<boolean>("shuffle", false);
+  const [repeat, setRepeat] = useIndexedDB<boolean>("repeat", false);
+  const [volume, setVolume] = useIndexedDB<number>("volume", 0.7);
+  const [seekPosition, setSeekPosition] = useIndexedDB<number | undefined>(
+    "seek-position",
+    0
+  );
 
-  // Initialize audio player
   const audioPlayer = useAudioPlayer({
     volume,
     onTrackEnd: handleTrackEnd,
     onTrackChange: setCurrentTrack,
+    onTimeUpdate: handleTimeUpdate,
   });
+
+  function handleTimeUpdate(currentTime: number | undefined) {
+    setSeekPosition(currentTime);
+  }
 
   // Set initial track if none is set but library exists
   useEffect(() => {
-    if (!currentTrack && library && library.files.length > 0) {
-      const lastPlayedTrackId = localStorage.getItem("lastPlayedTrack");
-      if (lastPlayedTrackId) {
-        const track = library.files.find(
-          (f) => f.file_path === lastPlayedTrackId
-        );
-        if (track) {
-          setCurrentTrack(track);
-          return;
+    (async () => {
+      if (!currentTrack && library && library.files.length > 0) {
+        const lastPlayedTrackId = await IDB.getItem("lastPlayedTrack");
+        if (lastPlayedTrackId) {
+          const track = library.files.find(
+            (f) => f.file_path === lastPlayedTrackId
+          );
+          if (track) {
+            setCurrentTrack(track);
+            return;
+          }
         }
+        setCurrentTrack(library.files[0]);
       }
-      setCurrentTrack(library.files[0]);
-    }
+    })();
   }, [library, currentTrack]);
 
-  // Play track when currentTrack changes
   useEffect(() => {
-    if (currentTrack) {
-      audioPlayer.playTrack(currentTrack);
-      localStorage.setItem("lastPlayedTrack", currentTrack.file_path);
+    if (currentTrack && audioPlayer.currentTime > 0) {
+      // Save both global and track-specific seek position
+      IDB.setItem(
+        `seek-position-${currentTrack.file_path}`,
+        audioPlayer.currentTime
+      );
+      setSeekPosition(audioPlayer.currentTime);
     }
+  }, [audioPlayer.currentTime, currentTrack]);
+
+  useEffect(() => {
+    (async () => {
+      if (currentTrack) {
+        const trackSeekPosition: number | undefined | null = await IDB.getItem(
+          `seek-position-${currentTrack.file_path}`
+        );
+        const positionToUse = trackSeekPosition || seekPosition;
+
+        audioPlayer.playTrack(currentTrack, positionToUse);
+        await IDB.setItem("lastPlayedTrack", currentTrack.file_path);
+
+        if (trackSeekPosition) {
+          await IDB.setItem(
+            `seek-position-${currentTrack.file_path}`,
+            trackSeekPosition
+          );
+        }
+      }
+    })();
   }, [currentTrack]);
 
   function handleTrackEnd() {
@@ -59,17 +97,13 @@ function App() {
     );
 
     if (shuffle) {
-      // Play random track
       const randomIndex = Math.floor(Math.random() * library.files.length);
       setCurrentTrack(library.files[randomIndex]);
     } else if (repeat) {
-      // Repeat current track
       audioPlayer.playTrack(currentTrack);
     } else if (currentIndex < library.files.length - 1) {
-      // Play next track
       setCurrentTrack(library.files[currentIndex + 1]);
     }
-    // Else: stop at end of playlist
   }
 
   function handlePlayTrack(track: AudioFile) {
@@ -154,7 +188,13 @@ function App() {
         onPlayPause={audioPlayer.togglePlayPause}
         onNext={handleNextTrack}
         onPrevious={handlePreviousTrack}
-        onSeek={audioPlayer.seek}
+        onSeek={(position) => {
+          audioPlayer.seek(position);
+          setSeekPosition(position);
+          if (currentTrack) {
+            IDB.setItem(`seek-position-${currentTrack.file_path}`, position);
+          }
+        }}
         onVolumeChange={(vol) => {
           setVolume(vol);
           audioPlayer.setVolume(vol);
