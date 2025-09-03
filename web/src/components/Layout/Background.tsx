@@ -514,7 +514,21 @@ const Background: React.FC<BackgroundProps> = ({
             ", 30%)"
           )} 0%, ${dominantColor.replace(")", ", 70%)")} 100%)`,
         }}
-      />
+      >
+        {track?.cover_art && (
+          <img
+            src={`data:${track?.cover_art_mime};base64,${track?.cover_art}`}
+            alt=""
+            style={{
+              width: "100svw",
+              height: "100svh",
+              objectFit: "cover",
+              opacity: 0.4,
+              filter: "blur(17px) brightness(0.7)",
+            }}
+          />
+        )}
+      </div>
 
       {/* Canvas for visualizers */}
       <canvas
