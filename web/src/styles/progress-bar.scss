@@ -11,6 +11,8 @@
   flex: 1;
   position: relative;
   cursor: pointer;
+  height: 20px;
+  align-content: center;
 
   &:hover {
     .progress-bar__handle {

@@ -179,14 +179,12 @@
     margin: 0 0 v.$spacing-xs 0;
     color: v.$text-color;
     font-size: 1.2rem;
-    text-align: center;
   }
 
   p {
     margin: 0;
     color: v.$text-secondary;
     font-size: 0.9rem;
-    text-align: center;
   }
 }
 
@@ -250,7 +248,7 @@
 
 .song-item {
   display: grid;
-  grid-template-columns: 50px 1fr 1fr 80px 80px;
+  grid-template-columns: 70px 1fr 1fr 80px 80px;
   align-items: center;
   padding: v.$spacing-md;
   border-radius: v.$border-radius-md;
@@ -268,14 +266,30 @@
   }
 }
 
-.song-item__number {
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  color: v.$text-secondary;
-  font-size: 0.9rem;
+.song-item__index {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .song-item__number {
+    font-variant-numeric: tabular-nums;
+    color: v.$text-secondary;
+  }
 
   .song-item--active & {
     color: v.$accent-color;
+  }
+
+  .song-item__cover,
+  .song-item__cover-placeholder {
+    width: 40px !important;
+    height: 40px;
+    border-radius: v.$border-radius-sm;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 }
 

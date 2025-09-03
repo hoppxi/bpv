@@ -4,12 +4,7 @@
   position: relative;
   z-index: v.$z-player;
   width: 100%;
-  max-width: 600px;
   padding: v.$spacing-xl;
-  backdrop-filter: blur(20px);
-  border-radius: v.$border-radius-xl;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: v.$shadow-lg;
 }
 
 .player--empty {
@@ -27,7 +22,7 @@
 
 .player__info {
   display: flex;
-  align-items: center;
+  align-items: end;
   gap: v.$spacing-lg;
   margin-bottom: v.$spacing-md;
 }
@@ -37,8 +32,8 @@
 }
 
 .player__cover {
-  width: 120px;
-  height: 120px;
+  width: 300px;
+  height: 300px;
   border-radius: v.$border-radius-lg;
   object-fit: cover;
   box-shadow: v.$shadow-md;
@@ -51,26 +46,30 @@
 }
 
 .player__cover--placeholder {
-  background: linear-gradient(135deg, v.$primary-color, v.$secondary-color);
+  background: linear-gradient(
+    90deg,
+    v.$primary-color 0%,
+    v.$secondary-color 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
-}
 
-.player__cover-icon {
-  opacity: 0.7;
+  .player__cover-icon {
+    opacity: 0.7;
+    scale: 4;
+  }
 }
 
 .player__text {
   flex: 1;
   min-width: 0;
+  margin-bottom: v.$spacing-xs;
 }
 
 .player__title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: v.$spacing-xs;
+  font-size: 2.6rem;
+  font-weight: 800;
   color: v.$text-color;
   white-space: nowrap;
   overflow: hidden;
@@ -78,7 +77,7 @@
 }
 
 .player__artist {
-  font-size: 1.1rem;
+  font-size: 2.1rem;
   color: v.$text-secondary;
   margin-bottom: v.$spacing-xs;
   white-space: nowrap;
@@ -87,7 +86,7 @@
 }
 
 .player__album {
-  font-size: 0.9rem;
+  font-size: 1.3rem;
   color: v.$text-secondary;
   opacity: 0.8;
   white-space: nowrap;

@@ -37,6 +37,7 @@ export interface LibraryTabProps extends ArtistsTabProps {
 
 export interface SearchTabProps {
   library: LibraryResponse;
+  currentTrack: AudioFile | null;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onPlayTrack: (track: AudioFile) => void;

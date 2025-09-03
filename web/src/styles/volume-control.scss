@@ -29,8 +29,8 @@
 .volume-control__slider-container {
   position: absolute;
   bottom: 105%;
-  left: 3.5%;
-  transform: translateX(-50%);
+  left: 0%;
+  transform: translateX(-15%);
   padding: v.$spacing-md;
   background: v.$background-blur;
   backdrop-filter: blur(20px);

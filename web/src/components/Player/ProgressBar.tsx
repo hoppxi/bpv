@@ -1,12 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { formatTime } from "@/utils";
+import { ProgressBarProps } from "@/types";
 import "@/styles/progress-bar.scss";
-
-interface ProgressBarProps {
-  currentTime: number;
-  duration: number;
-  onSeek: (time: number) => void;
-}
 
 const ProgressBar: React.FC<ProgressBarProps> = ({
   currentTime,

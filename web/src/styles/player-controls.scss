@@ -3,8 +3,7 @@
 
 .player-controls {
   display: flex;
-  flex-direction: column;
-  gap: v.$spacing-lg;
+  justify-content: space-between;
 }
 
 .player-controls__main {
@@ -16,12 +15,8 @@
 
 .player-controls__secondary {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 0.6rem;
-  position: absolute;
-  bottom: 7%;
-  right: 4.5%;
   z-index: 3;
 }
 
@@ -51,20 +46,20 @@
   &--play-pause {
     width: 60px;
     height: 60px;
-    background: v.$accent-color;
+    background: v.$text-color;
+    color: v.$accent-color;
 
     &:hover {
-      background: color.adjust(v.$accent-color, $lightness: 10%);
-      box-shadow: 0 8px 25px rgba(v.$accent-color, 0.4);
+      background: color.adjust(v.$text-secondary, $lightness: 10%);
+      box-shadow: 0 8px 25px rgba(v.$text-secondary, 0.4);
     }
   }
 
   &--active {
-    background: v.$accent-color;
-    color: white;
+    color: v.$accent-color;
 
     &:hover {
-      background: color.adjust(v.$accent-color, $lightness: 10%);
+      color: color.adjust(v.$accent-color, $lightness: 10%);
     }
   }
 }

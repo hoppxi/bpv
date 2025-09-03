@@ -1,29 +1,9 @@
 import React from "react";
 import PlayerControls from "./PlayerControls";
 import ProgressBar from "./ProgressBar";
-import VolumeControl from "./VolumeControl";
-import { AudioFile, VisualizerType } from "@/types";
+import { Music2 } from "lucide-react";
+import { PlayerProps } from "@/types";
 import "@/styles/player.scss";
-
-interface PlayerProps {
-  currentTrack: AudioFile | null;
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  volume: number;
-  shuffle: boolean;
-  repeat: boolean;
-  visualizerType: VisualizerType;
-  onPlayPause: () => void;
-  onNext: () => void;
-  onPrevious: () => void;
-  onSeek: (time: number) => void;
-  onVolumeChange: (volume: number) => void;
-  onShuffleChange: (shuffle: boolean) => void;
-  onRepeatChange: (repeat: boolean) => void;
-  onVisualizerChange: (type: VisualizerType) => void;
-  onOpenModal: () => void;
-}
 
 const Player: React.FC<PlayerProps> = ({
   currentTrack,
@@ -74,7 +54,9 @@ const Player: React.FC<PlayerProps> = ({
               />
             ) : (
               <div className="player__cover player__cover--placeholder">
-                <span className="player__cover-icon">🎵</span>
+                <span className="player__cover-icon">
+                  <Music2 />
+                </span>
               </div>
             )}
           </div>
@@ -112,10 +94,9 @@ const Player: React.FC<PlayerProps> = ({
           onRepeatChange={onRepeatChange}
           onVisualizerChange={onVisualizerChange}
           onOpenModal={onOpenModal}
+          volume={volume}
+          onVolumeChange={onVolumeChange}
         />
-
-        {/* Volume Control */}
-        <VolumeControl volume={volume} onVolumeChange={onVolumeChange} />
       </div>
     </div>
   );

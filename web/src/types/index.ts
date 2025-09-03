@@ -20,3 +20,9 @@ export type {
   VisualizerConfig,
   AudioAnalysis,
 } from "./visualizer";
+export type {
+  PlayerProps,
+  PlayerControlsProps,
+  ProgressBarProps,
+  VolumeControlProps,
+} from "./player";

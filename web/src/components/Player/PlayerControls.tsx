@@ -1,4 +1,5 @@
 import React from "react";
+import VolumeControl from "./VolumeControl";
 import {
   Play,
   Pause,
@@ -12,22 +13,8 @@ import {
   Circle,
   Sparkles,
 } from "lucide-react";
-import { VisualizerType } from "@/types/visualizer";
+import { PlayerControlsProps, VisualizerType } from "@/types";
 import "@/styles/player-controls.scss";
-
-interface PlayerControlsProps {
-  isPlaying: boolean;
-  shuffle: boolean;
-  repeat: boolean;
-  visualizerType: VisualizerType;
-  onPlayPause: () => void;
-  onNext: () => void;
-  onPrevious: () => void;
-  onShuffleChange: (shuffle: boolean) => void;
-  onRepeatChange: (repeat: boolean) => void;
-  onVisualizerChange: (type: VisualizerType) => void;
-  onOpenModal: () => void;
-}
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
   isPlaying,
@@ -41,6 +28,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onRepeatChange,
   onVisualizerChange,
   onOpenModal,
+  volume,
+  onVolumeChange,
 }) => {
   const visualizerIcons: Record<VisualizerType, React.ReactNode> = {
     bars: <BarChart3 size={20} />,
@@ -71,17 +60,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   return (
     <div className="player-controls">
       <div className="player-controls__main">
-        {/* Shuffle */}
-        <button
-          className={`player-controls__btn player-controls__btn--shuffle ${
-            shuffle ? "player-controls__btn--active" : ""
-          }`}
-          onClick={() => onShuffleChange(!shuffle)}
-          title="Shuffle"
-        >
-          <Shuffle size={20} />
-        </button>
-
         {/* Previous */}
         <button
           className="player-controls__btn player-controls__btn--previous"
@@ -109,6 +87,17 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           <SkipForward size={24} />
         </button>
 
+        {/* Shuffle */}
+        <button
+          className={`player-controls__btn player-controls__btn--shuffle ${
+            shuffle ? "player-controls__btn--active" : ""
+          }`}
+          onClick={() => onShuffleChange(!shuffle)}
+          title="Shuffle"
+        >
+          <Shuffle size={20} />
+        </button>
+
         {/* Repeat */}
         <button
           className={`player-controls__btn player-controls__btn--repeat ${
@@ -122,6 +111,9 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       </div>
 
       <div className="player-controls__secondary">
+        {/* Volume Control */}
+        <VolumeControl volume={volume} onVolumeChange={onVolumeChange} />
+
         {/* Visualizer Selector */}
         <div className="player-controls__visualizer-selector">
           <select

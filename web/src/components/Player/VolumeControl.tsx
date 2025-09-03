@@ -1,11 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Volume2, VolumeX, Volume1, Volume } from "lucide-react";
+import { VolumeControlProps } from "@/types";
 import "@/styles/volume-control.scss";
-
-interface VolumeControlProps {
-  volume: number;
-  onVolumeChange: (volume: number) => void;
-}
 
 const VolumeControl: React.FC<VolumeControlProps> = ({
   volume,
