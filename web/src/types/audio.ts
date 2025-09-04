@@ -36,6 +36,7 @@ export interface LibraryResponse {
   artists: Record<string, number>;
   albums: Record<string, number>;
   genres: Record<string, number>;
+  composers: Record<string, number>;
   files: AudioFile[];
   scan_time: string;
   errors: string[];

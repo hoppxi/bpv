@@ -4,6 +4,7 @@ import LibraryTab from "./LibraryTab";
 import ArtistsTab from "./ArtistsTab";
 import AlbumsTab from "./AlbumsTab";
 import GenresTab from "./GenresTab";
+import ComposersTab from "./ComposerTab";
 import SearchTab from "./SearchTab";
 import SettingsTab from "./SettingsTab";
 import StorageTab from "./StorageTab";
@@ -33,7 +34,7 @@ const Modal: React.FC<ModalProps> = ({
   onRepeatChange,
   onRefreshLibrary,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>("artists");
+  const [activeTab, setActiveTab] = useState<TabType>("library");
   const [searchQuery, setSearchQuery] = useState("");
 
   if (!isOpen) return null;
@@ -43,6 +44,7 @@ const Modal: React.FC<ModalProps> = ({
     { id: "artists" as TabType, label: "Artists", icon: Users },
     { id: "albums" as TabType, label: "Albums", icon: Disc },
     { id: "genres" as TabType, label: "Genres", icon: Tag },
+    { id: "composers" as TabType, label: "Composers", icon: Users },
     { id: "search" as TabType, label: "Search", icon: Search },
     { id: "settings" as TabType, label: "Settings", icon: Settings },
     { id: "storage" as TabType, label: "Storage", icon: Database },
@@ -78,6 +80,14 @@ const Modal: React.FC<ModalProps> = ({
       case "genres":
         return (
           <GenresTab
+            library={library}
+            currentTrack={currentTrack}
+            onPlayTrack={onPlayTrack}
+          />
+        );
+      case "composers":
+        return (
+          <ComposersTab
             library={library}
             currentTrack={currentTrack}
             onPlayTrack={onPlayTrack}
