@@ -21,9 +21,17 @@ export type TabType =
   | "artists"
   | "albums"
   | "genres"
+  | "composers"
   | "search"
   | "settings"
   | "storage";
+
+export interface TrackRowProps {
+  library: LibraryResponse | AudioFile[];
+  currentTrack: AudioFile | null;
+  onPlayTrack: (track: AudioFile) => void;
+  index: number;
+}
 
 export interface ArtistsTabProps {
   library: LibraryResponse;
@@ -52,5 +60,13 @@ export interface SettingsTabProps {
   onRepeatChange: (repeat: boolean) => void;
 }
 
+export interface StrorageDataType {
+  total: number;
+  used: number;
+  free: number;
+  items: Array<{ key: string; size: number; lastModified: string }>;
+}
+
 export type { ArtistsTabProps as AlbumsTabProps };
 export type { ArtistsTabProps as GenresTabProps };
+export type { ArtistsTabProps as ComposersTabProps };

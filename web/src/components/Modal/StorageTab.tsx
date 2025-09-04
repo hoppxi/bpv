@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Trash2, Download, Upload, PieChart } from "lucide-react";
 import { formatFileSize, IDB } from "@/utils";
+import { StrorageDataType } from "@/types";
 import "@/styles/modal-tabs.scss";
 
 const StorageTab: React.FC = () => {
-  const [storageData, setStorageData] = useState<{
-    total: number;
-    used: number;
-    free: number;
-    items: Array<{ key: string; size: number; lastModified: string }>;
-  }>({
+  const [storageData, setStorageData] = useState<StrorageDataType>({
     total: 0,
     used: 0,
     free: 0,

@@ -8,12 +8,15 @@ export type { BackgroundProps } from "./background";
 export type {
   TabType,
   ModalProps,
+  TrackRowProps,
   LibraryTabProps,
   ArtistsTabProps,
   AlbumsTabProps,
   GenresTabProps,
+  ComposersTabProps,
   SearchTabProps,
   SettingsTabProps,
+  StrorageDataType,
 } from "./modal";
 export type {
   VisualizerType,
