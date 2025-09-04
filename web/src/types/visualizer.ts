@@ -1,4 +1,5 @@
 export type VisualizerType =
+  | "none"
   | "bars"
   | "wave"
   | "particles"

@@ -138,6 +138,9 @@ const Background: React.FC<BackgroundProps> = ({
               colorPalette
             );
             break;
+          case "none":
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            break;
           default:
             renderBars(
               ctx,

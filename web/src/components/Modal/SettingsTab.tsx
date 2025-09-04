@@ -8,6 +8,7 @@ import {
   ToggleLeft,
   ToggleRight,
   RefreshCw,
+  Ban,
   Heart,
 } from "lucide-react";
 import "@/styles/modal-tabs.scss";
@@ -26,6 +27,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
     label: string;
     icon: React.ReactNode;
   }[] = [
+    { type: "none", label: "None", icon: <Ban size={20} /> },
     { type: "bars", label: "Bars", icon: <BarChart3 size={20} /> },
     { type: "wave", label: "Wave", icon: <Waves size={20} /> },
     { type: "particles", label: "Particles", icon: <Sparkles size={20} /> },

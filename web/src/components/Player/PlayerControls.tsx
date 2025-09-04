@@ -12,6 +12,7 @@ import {
   Waves,
   Circle,
   Sparkles,
+  Ban,
 } from "lucide-react";
 import { PlayerControlsProps, VisualizerType } from "@/types";
 import "@/styles/player-controls.scss";
@@ -32,6 +33,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onVolumeChange,
 }) => {
   const visualizerIcons: Record<VisualizerType, React.ReactNode> = {
+    none: <Ban size={20} />,
     bars: <BarChart3 size={20} />,
     wave: <Waves size={20} />,
     particles: <Sparkles size={20} />,
@@ -45,6 +47,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   };
 
   const visualizerTypes: VisualizerType[] = [
+    "none",
     "bars",
     "wave",
     "particles",
