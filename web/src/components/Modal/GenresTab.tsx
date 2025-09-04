@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { GenresTabProps } from "@/types";
-import { Play, Tag, Search, Music2, BarChart2 } from "lucide-react";
-import { formatTime, formatFileSize } from "@/utils";
+import { Play, Tag, Search, ArrowLeft } from "lucide-react";
+import { Virtuoso } from "react-virtuoso";
+import TrackRow from "./TrackRow";
 import "@/styles/modal-tabs.scss";
 
 const GenresTab: React.FC<GenresTabProps> = ({
@@ -29,6 +30,20 @@ const GenresTab: React.FC<GenresTabProps> = ({
     }
   };
 
+  const Row = React.useCallback(
+    (index: number) => {
+      return (
+        <TrackRow
+          library={genreSongs}
+          currentTrack={currentTrack}
+          onPlayTrack={onPlayTrack}
+          index={index}
+        />
+      );
+    },
+    [genreSongs, currentTrack, onPlayTrack, library]
+  );
+
   if (selectedGenre) {
     return (
       <div className="tab-content">
@@ -37,7 +52,7 @@ const GenresTab: React.FC<GenresTabProps> = ({
             className="tab-content__back-btn"
             onClick={() => setSelectedGenre(null)}
           >
-            ← Back to Genres
+            <ArrowLeft size={14} /> Back to Genres
           </button>
           <div className="tab-content__stats">
             <h3>{selectedGenre}</h3>
@@ -54,50 +69,13 @@ const GenresTab: React.FC<GenresTabProps> = ({
 
         <div className="tab-content__list">
           <div className="songs-list">
-            {genreSongs.map((track, index) => (
-              <div
-                key={track.file_path}
-                className={`song-item ${
-                  currentTrack?.file_path === track.file_path
-                    ? "song-item--active"
-                    : ""
-                }`}
-                onClick={() => onPlayTrack(track)}
-              >
-                <div className="song-item__index">
-                  {currentTrack?.file_path === track.file_path ? (
-                    <div className="song-item__playing-indicator">
-                      <BarChart2 />
-                    </div>
-                  ) : (
-                    <div className="song-item__number">{index + 1}</div>
-                  )}
-
-                  {track?.cover_art ? (
-                    <img
-                      src={`data:${track?.cover_art_mime};base64,${track?.cover_art}`}
-                      alt={track?.album}
-                      className="song-item__cover"
-                    />
-                  ) : (
-                    <div className="song-item__cover-placeholder">
-                      <Music2 />
-                    </div>
-                  )}
-                </div>
-                <div className="song-item__info">
-                  <div className="song-item__title">{track.title}</div>
-                  <div className="song-item__artist">{track.artist}</div>
-                </div>
-                <div className="song-item__album">{track.album}</div>
-                <div className="song-item__duration">
-                  {formatTime(parseInt(track.duration) || 0)}
-                </div>
-                <div className="song-item__size">
-                  {formatFileSize(track.file_size)}
-                </div>
-              </div>
-            ))}
+            <Virtuoso
+              totalCount={genreSongs.length}
+              itemContent={Row}
+              style={{ height: "calc(100vh - 400px)" }}
+              overscan={200}
+              increaseViewportBy={{ top: 200, bottom: 200 }}
+            />
           </div>
         </div>
       </div>

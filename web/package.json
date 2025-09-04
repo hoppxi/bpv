@@ -15,6 +15,7 @@
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-virtuoso": "^4.14.0",
     "sass": "^1.91.0"
   },
   "devDependencies": {

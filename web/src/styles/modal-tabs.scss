@@ -112,6 +112,9 @@
   padding: v.$spacing-sm;
   border-radius: v.$border-radius-md;
   transition: all v.$transition-normal;
+  display: flex;
+  align-items: center;
+  gap: v.$spacing-sm;
 
   &:hover {
     color: v.$text-color;
