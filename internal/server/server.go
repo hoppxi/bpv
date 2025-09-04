@@ -87,6 +87,8 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/album/", s.handleAlbum)
 	mux.HandleFunc("/api/genres", s.handleGenres)
 	mux.HandleFunc("/api/genre/", s.handleGenre)
+	mux.HandleFunc("/api/composers", s.handleComposers)
+	mux.HandleFunc("/api/composer/", s.handleComposer)
 	mux.HandleFunc("/api/search", s.handleSearch)
 	mux.HandleFunc("/api/base-path", s.handleBaseFilePath)
 	mux.HandleFunc("/api/debug", s.handleDebug)

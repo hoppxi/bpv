@@ -24,6 +24,7 @@ type ScanResult struct {
 	Artists     map[string]int        `json:"artists"`
 	Albums      map[string]int        `json:"albums"`
 	Genres      map[string]int        `json:"genres"`
+	Composers   map[string]int        `json:"composers"`
 	Files       []metadata.AudioFile  `json:"files"`
 	Duration    time.Duration         `json:"duration"`
 	Errors      []string              `json:"errors"`
@@ -58,6 +59,7 @@ func (s *Scanner) ScanLibrary(rootPath string) (*ScanResult, error) {
 		Artists: make(map[string]int),
 		Albums:  make(map[string]int),
 		Genres:  make(map[string]int),
+		Composers: make(map[string]int),
 		Errors:  []string{},
 	}
 
@@ -93,6 +95,9 @@ func (s *Scanner) ScanLibrary(rootPath string) (*ScanResult, error) {
 			}
 			if audioFile.Genre != "" && audioFile.Genre != "Unknown Genre" {
 				result.Genres[audioFile.Genre]++
+			}
+			if audioFile.Composer != "" && audioFile.Composer != "Unknown Composer" {
+				result.Composers[audioFile.Composer]++
 			}
 			mu.Unlock()
 
@@ -155,6 +160,7 @@ func (s *Scanner) QuickScan(rootPath string) ([]metadata.AudioFile, error) {
 			Title:       filepath.Base(path),
 			Artist:      "Unknown Artist",
 			Album:       "Unknown Album",
+			Composer:    "Unknown Composer",
 		})
 	}
 

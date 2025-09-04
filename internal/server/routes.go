@@ -29,6 +29,7 @@ type LibraryResponse struct {
 	Artists     map[string]int       `json:"artists"`
 	Albums      map[string]int       `json:"albums"`
 	Genres      map[string]int       `json:"genres"`
+	Composers   map[string]int       `json:"composers"`
 	Files       []metadata.AudioFile `json:"files"`
 	ScanTime    string               `json:"scan_time"`
 	Errors      []string             `json:"errors,omitempty"`
@@ -238,6 +239,7 @@ func (s *Server) handleLibrary(w http.ResponseWriter, r *http.Request) {
         artists := make(map[string]int)
         albums := make(map[string]int)
         genres := make(map[string]int)
+		composers := make(map[string]int)
         var errors []string
 
        logger.Log.Debug("Scanning %d audio files...", len(audioFilePaths))
@@ -265,6 +267,9 @@ func (s *Server) handleLibrary(w http.ResponseWriter, r *http.Request) {
             if audioFile.Genre != "" && audioFile.Genre != "Unknown Genre" {
                 genres[audioFile.Genre]++
             }
+			if audioFile.Composer != "" && audioFile.Composer != "Unknown Composer" {
+                composers[audioFile.Composer]++
+            }
 
             if (i+1)%100 == 0 || i+1 == len(audioFilePaths) {
                logger.Log.Debug("Processed %d/%d files", i+1, len(audioFilePaths))
@@ -279,6 +284,7 @@ func (s *Server) handleLibrary(w http.ResponseWriter, r *http.Request) {
             Artists:    artists,
             Albums:     albums,
             Genres:     genres,
+			Composers:  composers,
             Files:      files,
             Duration:   time.Duration(0),
             Errors:     errors,
@@ -299,6 +305,7 @@ func (s *Server) handleLibrary(w http.ResponseWriter, r *http.Request) {
         Artists:    s.library.Artists,
         Albums:     s.library.Albums,
         Genres:     s.library.Genres,
+		Composers:  s.library.Composers,
         Files:      s.library.Files,
         ScanTime:   s.lastScan.Format(time.RFC3339),
         Errors:     s.library.Errors,
@@ -541,6 +548,52 @@ func (s *Server) handleGenre(w http.ResponseWriter, r *http.Request) {
 		"count":  len(genreSongs),
 	})
 }
+
+func (s *Server) handleComposers(w http.ResponseWriter, r *http.Request) {
+	if s.library == nil {
+		http.Error(w, "Library not scanned yet", http.StatusNotFound)
+		return
+	}
+
+	composers := make([]map[string]any, 0, len(s.library.Composers))
+	for composer, count := range s.library.Composers {
+		composers = append(composers, map[string]any{
+			"name":  composer,
+			"count": count,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"status":  "ok",
+		"composers":  composers,
+		"total":   len(composers),
+	})
+}
+
+func (s *Server) handleComposer(w http.ResponseWriter, r *http.Request) {
+	composerName := strings.TrimPrefix(r.URL.Path, "/api/composer/")
+	if composerName == "" {
+		http.Error(w, "Composer name required", http.StatusBadRequest)
+		return
+	}
+
+	var composerSongs []metadata.AudioFile
+	for _, file := range s.library.Files {
+		if file.Composer == composerName {
+			composerSongs = append(composerSongs, file)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"status": "ok",
+		"composer":  composerName,
+		"songs":  composerSongs,
+		"count":  len(composerSongs),
+	})
+}
+
 
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	if s.library == nil {
