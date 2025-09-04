@@ -88,14 +88,17 @@ func (e *Extractor) ExtractFromFile(filePath string) (*AudioFile, error) {
     }
 
     if info.Size() == 0 {
+        audioFile.Error = "File is empty"
         return audioFile, nil
     }
 
+    file.Seek(0, io.SeekStart)
     metadata, err := tag.ReadFrom(file)
     if err != nil && err != io.EOF {
         if logger.Log.IsVerbose() {
             logger.Log.Warn("Failed to extract metadata from %s: %v", filePath, err)
         }
+        audioFile.Error = fmt.Sprintf("Metadata extraction error: %v", err)
         return audioFile, nil
     }
 
@@ -105,7 +108,9 @@ func (e *Extractor) ExtractFromFile(filePath string) (*AudioFile, error) {
         e.extractCoverArtData(audioFile, metadata)
     }
 
-    e.populateTechnicalMetadata(audioFile, file)
+    // Reset file pointer again for technical metadata extraction
+    file.Seek(0, io.SeekStart)
+    e.populateTechnicalMetadata(audioFile, file, metadata)
 
     return audioFile, nil
 }
@@ -145,7 +150,7 @@ func (e *Extractor) populateBasicMetadata(audioFile *AudioFile, metadata tag.Met
         audioFile.Album = album
     } else {
         parentDir := filepath.Base(filepath.Dir(audioFile.FilePath))
-        if parentDir != "." && parentDir != ".." {
+        if parentDir != "." && parentDir != ".." && parentDir != "" {
             audioFile.Album = parentDir
         } else {
             audioFile.Album = "Unknown Album"
@@ -183,6 +188,10 @@ func (e *Extractor) populateBasicMetadata(audioFile *AudioFile, metadata tag.Met
     if comment := metadata.Comment(); comment != "" {
         audioFile.Comment = comment
     }
+
+    if lyrics := metadata.Lyrics(); lyrics != "" {
+        audioFile.Lyrics = lyrics
+    }
 }
 
 func (e *Extractor) extractCoverArtData(audioFile *AudioFile, metadata tag.Metadata) {
@@ -195,21 +204,58 @@ func (e *Extractor) extractCoverArtData(audioFile *AudioFile, metadata tag.Metad
         return
     }
 
-    img, _, err := image.Decode(bytes.NewReader(picture.Data))
-    if err != nil {
+    if len(picture.Data) == 0 {
         return
     }
 
-    img = e.resizeImage(img)
+    audioFile.CoverArtMime = picture.MIMEType
 
-    var buf bytes.Buffer
-    err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 85})
-    if err != nil {
-        return
+    // For non-JPEG images, we'll convert to JPEG
+    if picture.MIMEType != "image/jpeg" {
+        img, _, err := image.Decode(bytes.NewReader(picture.Data))
+        if err != nil {
+            if logger.Log.IsVerbose() {
+                logger.Log.Warn("Failed to decode cover art: %v", err)
+            }
+            return
+        }
+
+        img = e.resizeImage(img)
+
+        var buf bytes.Buffer
+        err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 85})
+        if err != nil {
+            if logger.Log.IsVerbose() {
+                logger.Log.Warn("Failed to encode cover art as JPEG: %v", err)
+            }
+            return
+        }
+
+		audioFile.CoverArt = base64.StdEncoding.EncodeToString(buf.Bytes())
+		audioFile.CoverArtMime = "image/jpeg"
+	} else {
+		// For JPEG, we can use the original data but may need to resize
+		img, _, err := image.Decode(bytes.NewReader(picture.Data))
+		if err != nil {
+			if logger.Log.IsVerbose() {
+				logger.Log.Warn("Failed to decode JPEG cover art: %v", err)
+			}
+			return
+		}
+
+		img = e.resizeImage(img)
+
+		var buf bytes.Buffer
+		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 85})
+		if err != nil {
+			if logger.Log.IsVerbose() {
+				logger.Log.Warn("Failed to re-encode JPEG cover art: %v", err)
+			}
+			return
+        }
+
+        audioFile.CoverArt = base64.StdEncoding.EncodeToString(buf.Bytes())
     }
-
-    audioFile.CoverArt = base64.StdEncoding.EncodeToString(buf.Bytes())
-    audioFile.CoverArtMime = "image/jpeg"
 }
 
 func (e *Extractor) resizeImage(img image.Image) image.Image {
@@ -242,45 +288,85 @@ func (e *Extractor) resizeImage(img image.Image) image.Image {
 	return resized
 }
 
-func (e *Extractor) populateTechnicalMetadata(audioFile *AudioFile, file *os.File) {
-	type formatMeta struct {
-		Bitrate    int // kbps
-		SampleRate int // Hz
-		Channels   int
-	}
+func (e *Extractor) populateTechnicalMetadata(audioFile *AudioFile, _ *os.File, metadata tag.Metadata) {
+    if metadata != nil {
+		raw := metadata.Raw()
 
-	formatDefaults := map[string]formatMeta{
-		"flac": {Bitrate: 1411, SampleRate: 44100, Channels: 2},
-		"wav":  {Bitrate: 1411, SampleRate: 44100, Channels: 2},
-		"aiff": {Bitrate: 1411, SampleRate: 44100, Channels: 2},
-		"mp3":  {Bitrate: 320, SampleRate: 44100, Channels: 2},
-		"m4a":  {Bitrate: 256, SampleRate: 44100, Channels: 2},
-		"aac":  {Bitrate: 256, SampleRate: 44100, Channels: 2},
-	}
-
-	lowerType := strings.ToLower(audioFile.FileType)
-	if meta, ok := formatDefaults[lowerType]; ok {
-		audioFile.Bitrate = meta.Bitrate
-		audioFile.SampleRate = meta.SampleRate
-		audioFile.Channels = meta.Channels
-	} else {
-		audioFile.Bitrate = 128
-		audioFile.SampleRate = 44100
-		audioFile.Channels = 2
-	}
-
-	if fileInfo, err := file.Stat(); err == nil {
-		audioFile.FileSize = fileInfo.Size()
-
-		if audioFile.Bitrate > 0 {
-			bits := audioFile.FileSize * 8
-			bps := int64(audioFile.Bitrate * 1000)
-			durationSec := float64(bits) / float64(bps)
-			audioFile.Duration = time.Duration(durationSec * float64(time.Second))
+        if format, ok := raw["format"]; ok {
+            if formatMap, ok := format.(map[string]interface{}); ok {
+                if bitrate, ok := formatMap["bitrate"]; ok {
+                    if b, ok := bitrate.(int); ok {
+						audioFile.Bitrate = b / 1000 // Convert to kbps
+					}
+				}
+				if sampleRate, ok := formatMap["sampleRate"]; ok {
+					if sr, ok := sampleRate.(int); ok {
+						audioFile.SampleRate = sr
+					}
+				}
+				if channels, ok := formatMap["channels"]; ok {
+					if ch, ok := channels.(int); ok {
+						audioFile.Channels = ch
+					}
+				}
+			}
 		}
-	} else {
-		audioFile.Duration = 0
-		logger.Log.Error("Failed to stat file: %v", err)
+		
+		if duration, ok := raw["duration"]; ok {
+			if d, ok := duration.(time.Duration); ok {
+				audioFile.Duration = d
+			} else if d, ok := duration.(float64); ok {
+				audioFile.Duration = time.Duration(d * float64(time.Second))
+			}
+		}
+	}
+
+	// Fallback to defaults if we couldn't extract technical metadata
+	if audioFile.Bitrate == 0 || audioFile.SampleRate == 0 || audioFile.Channels == 0 {
+		formatDefaults := map[string]struct {
+			Bitrate    int
+			SampleRate int
+			Channels   int
+		}{
+			"flac": {Bitrate: 1411, SampleRate: 44100, Channels: 2},
+			"wav":  {Bitrate: 1411, SampleRate: 44100, Channels: 2},
+			"aiff": {Bitrate: 1411, SampleRate: 44100, Channels: 2},
+			"mp3":  {Bitrate: 320, SampleRate: 44100, Channels: 2},
+			"m4a":  {Bitrate: 256, SampleRate: 44100, Channels: 2},
+			"aac":  {Bitrate: 256, SampleRate: 44100, Channels: 2},
+			"ogg":  {Bitrate: 192, SampleRate: 44100, Channels: 2},
+			"opus": {Bitrate: 128, SampleRate: 48000, Channels: 2},
+		}
+
+		lowerType := strings.ToLower(audioFile.FileType)
+		if meta, ok := formatDefaults[lowerType]; ok {
+			if audioFile.Bitrate == 0 {
+				audioFile.Bitrate = meta.Bitrate
+			}
+			if audioFile.SampleRate == 0 {
+				audioFile.SampleRate = meta.SampleRate
+			}
+			if audioFile.Channels == 0 {
+				audioFile.Channels = meta.Channels
+			}
+		} else {
+			if audioFile.Bitrate == 0 {
+				audioFile.Bitrate = 128
+			}
+			if audioFile.SampleRate == 0 {
+				audioFile.SampleRate = 44100
+			}
+			if audioFile.Channels == 0 {
+				audioFile.Channels = 2
+			}
+		}
+	}
+
+	if audioFile.Duration == 0 && audioFile.FileSize > 0 && audioFile.Bitrate > 0 {
+		bits := audioFile.FileSize * 8
+		bps := int64(audioFile.Bitrate * 1000)
+		durationSec := float64(bits) / float64(bps)
+		audioFile.Duration = time.Duration(durationSec * float64(time.Second))
 	}
 }
 
@@ -289,5 +375,23 @@ func (e *Extractor) SetExtractCoverArt(extract bool) {
 }
 
 func (e *Extractor) SetMaxCoverSize(size int) {
-	e.maxCoverSize = size
+	if size > 0 {
+		e.maxCoverSize = size
+	}
+}
+
+func (e *Extractor) ExtractFromFiles(filePaths []string) ([]*AudioFile, []error) {
+    var results []*AudioFile
+    var errors []error
+
+    for _, filePath := range filePaths {
+        audioFile, err := e.ExtractFromFile(filePath)
+		if err != nil {
+            errors = append(errors, err)
+            continue
+        }
+		results = append(results, audioFile)
+	}
+
+	return results, errors
 }
