@@ -3,6 +3,7 @@ import { ComposersTabProps } from "@/types";
 import { Play, Users, Search, ArrowLeft } from "lucide-react";
 import { Virtuoso } from "react-virtuoso";
 import TrackRow from "./TrackRow";
+import TrackGroupGrid from "./TrackGroupGrid";
 import "@/styles/modal-tabs.scss";
 
 const ComposersTab: React.FC<ComposersTabProps> = ({
@@ -104,33 +105,12 @@ const ComposersTab: React.FC<ComposersTabProps> = ({
       </div>
 
       <div className="tab-content__list">
-        <div className="grid-list">
-          {composers.map(([composer, count]) => (
-            <div
-              key={composer}
-              className="grid-item"
-              onClick={() => setSelectedComposer(composer)}
-            >
-              <div className="grid-item__icon">
-                <Users size={32} />
-              </div>
-              <div className="grid-item__info">
-                <div className="grid-item__title">{composer}</div>
-                <div className="grid-item__subtitle">{count} songs</div>
-              </div>
-              <button
-                className="grid-item__action"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlayComposer(composer);
-                }}
-                title="Play composer"
-              >
-                <Play size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
+        <TrackGroupGrid
+          metadata={{ name: "composer", icon: <Users size={32} /> }}
+          group={composers}
+          handlePlayGroup={handlePlayComposer}
+          onclick={(track: string) => setSelectedComposer(track)}
+        />
       </div>
     </div>
   );

@@ -33,6 +33,13 @@ export interface TrackRowProps {
   index: number;
 }
 
+export interface TrackGroupGridProps {
+  metadata: { name: string; icon: React.ReactNode };
+  group: [string, number][];
+  handlePlayGroup: (group: string) => void;
+  onclick: (track: string) => void;
+}
+
 export interface ArtistsTabProps {
   library: LibraryResponse;
   currentTrack: AudioFile | null;

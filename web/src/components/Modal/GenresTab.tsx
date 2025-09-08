@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { GenresTabProps } from "@/types";
-import { Play, Tag, Search, ArrowLeft } from "lucide-react";
+import { Play, Search, ArrowLeft, Tag } from "lucide-react";
 import { Virtuoso } from "react-virtuoso";
 import TrackRow from "./TrackRow";
+import TrackGroupGrid from "./TrackGroupGrid";
 import "@/styles/modal-tabs.scss";
 
 const GenresTab: React.FC<GenresTabProps> = ({
@@ -102,33 +103,12 @@ const GenresTab: React.FC<GenresTabProps> = ({
       </div>
 
       <div className="tab-content__list">
-        <div className="grid-list">
-          {genres.map(([genre, count]) => (
-            <div
-              key={genre}
-              className="grid-item"
-              onClick={() => setSelectedGenre(genre)}
-            >
-              <div className="grid-item__icon">
-                <Tag size={32} />
-              </div>
-              <div className="grid-item__info">
-                <div className="grid-item__title">{genre}</div>
-                <div className="grid-item__subtitle">{count} songs</div>
-              </div>
-              <button
-                className="grid-item__action"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlayGenre(genre);
-                }}
-                title="Play genre"
-              >
-                <Play size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
+        <TrackGroupGrid
+          metadata={{ name: "genre", icon: <Tag /> }}
+          group={genres}
+          handlePlayGroup={handlePlayGenre}
+          onclick={(i) => setSelectedGenre(i)}
+        />
       </div>
     </div>
   );

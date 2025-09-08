@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { AlbumsTabProps } from "@/types";
 import { Play, Disc, Search, ArrowLeft } from "lucide-react";
-import TrackRow from "./TrackRow";
 import { Virtuoso } from "react-virtuoso";
+import TrackRow from "./TrackRow";
+import TrackGroupGrid from "./TrackGroupGrid";
 import "@/styles/modal-tabs.scss";
 
 const AlbumsTab: React.FC<AlbumsTabProps> = ({
@@ -102,33 +103,12 @@ const AlbumsTab: React.FC<AlbumsTabProps> = ({
       </div>
 
       <div className="tab-content__list">
-        <div className="grid-list">
-          {albums.map(([album, count]) => (
-            <div
-              key={album}
-              className="grid-item"
-              onClick={() => setSelectedAlbum(album)}
-            >
-              <div className="grid-item__icon">
-                <Disc size={32} />
-              </div>
-              <div className="grid-item__info">
-                <div className="grid-item__title">{album}</div>
-                <div className="grid-item__subtitle">{count} songs</div>
-              </div>
-              <button
-                className="grid-item__action"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlayAlbum(album);
-                }}
-                title="Play album"
-              >
-                <Play size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
+        <TrackGroupGrid
+          metadata={{ name: "album", icon: <Disc size={32} /> }}
+          group={albums}
+          handlePlayGroup={handlePlayAlbum}
+          onclick={(track) => setSelectedAlbum(track)}
+        />
       </div>
     </div>
   );

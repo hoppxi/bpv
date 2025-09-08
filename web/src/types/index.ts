@@ -9,6 +9,7 @@ export type {
   TabType,
   ModalProps,
   TrackRowProps,
+  TrackGroupGridProps,
   LibraryTabProps,
   ArtistsTabProps,
   AlbumsTabProps,
