@@ -29,7 +29,7 @@ function App() {
 
   const audioPlayer = useAudioPlayer({
     volume,
-    onTrackEnd: handleTrackEnd,
+    onTrackEnd: async () => await handleTrackEnd(),
     onTrackChange: setCurrentTrack,
     onTimeUpdate: handleTimeUpdate,
   });
@@ -89,8 +89,10 @@ function App() {
     })();
   }, [currentTrack]);
 
-  function handleTrackEnd() {
+  async function handleTrackEnd() {
     if (!library || !currentTrack) return;
+
+    await IDB.removeItem(`seek-position-${currentTrack.file_path}`);
 
     const currentIndex = library.files.findIndex(
       (file) => file.file_path === currentTrack.file_path
@@ -101,7 +103,7 @@ function App() {
       setCurrentTrack(library.files[randomIndex]);
     } else if (repeat) {
       audioPlayer.playTrack(currentTrack);
-    } else if (currentIndex < library.files.length - 1) {
+    } else {
       setCurrentTrack(library.files[currentIndex + 1]);
     }
   }
@@ -110,22 +112,27 @@ function App() {
     setCurrentTrack(track);
   }
 
-  function handleNextTrack() {
+  async function handleNextTrack() {
     if (!library || !currentTrack) return;
+
+    await IDB.removeItem(`seek-position-${currentTrack.file_path}`);
 
     const currentIndex = library.files.findIndex(
       (file) => file.file_path === currentTrack.file_path
     );
 
-    if (currentIndex < library.files.length - 1) {
+    if (shuffle) {
+      const randomIndex = Math.floor(Math.random() * library.files.length);
+      setCurrentTrack(library.files[randomIndex]);
+    } else if (currentIndex < library.files.length - 1) {
       setCurrentTrack(library.files[currentIndex + 1]);
-    } else if (repeat) {
-      setCurrentTrack(library.files[0]);
     }
   }
 
-  function handlePreviousTrack() {
+  async function handlePreviousTrack() {
     if (!library || !currentTrack) return;
+
+    await IDB.removeItem(`seek-position-${currentTrack.file_path}`);
 
     const currentIndex = library.files.findIndex(
       (file) => file.file_path === currentTrack.file_path
@@ -186,8 +193,8 @@ function App() {
         repeat={repeat}
         visualizerType={visualizerType}
         onPlayPause={audioPlayer.togglePlayPause}
-        onNext={handleNextTrack}
-        onPrevious={handlePreviousTrack}
+        onNext={async () => await handleNextTrack()}
+        onPrevious={async () => await handlePreviousTrack()}
         onSeek={(position) => {
           audioPlayer.seek(position);
           setSeekPosition(position);
