@@ -28,8 +28,9 @@
           web = packagesDef.bpvweb;
         };
       }
-    ) // {
-      homeManagerModules.default = import ./nix/home-manager.nix { inherit self; };
+    )
+    // {
+      homeModules.default = import ./nix/home-manager.nix { inherit self; };
       nixosModules.default = import ./nix/nixos.nix { inherit self; };
     };
 }
