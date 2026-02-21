@@ -45,7 +45,7 @@ You can use the flake, makefile or manual building
 
 ```bash
 # with nix
-nix build .#default # for daemon use .#bpdv, for bpv main binary use .#bpv and for web build use .#web
+nix build .#default # for daemon use .#bpvd, for bpv main binary use .#bpv and for web build use .#web
 
 # with makefile
 make build
