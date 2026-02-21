@@ -1,0 +1,10 @@
+/bpv
+/bpvd
+/web/dist
+node_modules
+/web/tsconfig.node.tsbuildinfo
+/web/tsconfig.tsbuildinfo
+/web/vite.config.d.ts
+/web/vite.config.js
+vendor
+result
